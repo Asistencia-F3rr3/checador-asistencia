@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Checador">
+<link rel="manifest" href="manifest.json">
+<title>Checador de Asistencia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS ─────────────────────────────────────── */
+:root{
+  --bg:        #0f172a;
+  --surface:   #1e293b;
+  --surface2:  #273449;
+  --border:    #334155;
+  --accent:    #38bdf8;
+  --accent2:   #0ea5e9;
+  --success:   #22d3a0;
+  --warn:      #f59e0b;
+  --danger:    #f87171;
+  --text:      #f1f5f9;
+  --muted:     #94a3b8;
+  --radius:    14px;
+  --font-head: 'Space Grotesk', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  color-scheme: dark;
+}
+
+/* ── RESET ──────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:16px;line-height:1.5;overflow-x:hidden}
+input,button,select{font-family:inherit;font-size:inherit}
+img{max-width:100%;border-radius:8px}
+
+/* ── LAYOUT ─────────────────────────────────────── */
+.screen{display:none;min-height:100dvh;flex-direction:column}
+.screen.active{display:flex}
+
+/* ── LOGIN ──────────────────────────────────────── */
+#screen-login{
+  align-items:center;justify-content:center;padding:2rem 1.5rem;
+  background: radial-gradient(ellipse at 20% 0%, #0c2a4a 0%, #0f172a 60%);
+}
+.login-box{width:100%;max-width:380px}
+.login-logo{
+  font-family:var(--font-head);font-size:28px;font-weight:700;
+  color:var(--accent);letter-spacing:-0.5px;margin-bottom:.25rem;
+}
+.login-sub{color:var(--muted);font-size:14px;margin-bottom:2.5rem}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:1rem}
+.field label{font-size:13px;color:var(--muted);font-weight:500}
+.field input{
+  background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+  color:var(--text);padding:12px 14px;outline:none;transition:border-color .2s;
+}
+.field input:focus{border-color:var(--accent)}
+.btn{
+  width:100%;padding:13px;border:none;border-radius:10px;font-weight:600;
+  font-size:15px;cursor:pointer;transition:opacity .15s,transform .1s;
+}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--accent);color:#0f172a}
+.btn-primary:hover{opacity:.9}
+.btn-sm{width:auto;padding:8px 16px;font-size:13px;border-radius:8px}
+.login-err{
+  background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.3);
+  color:var(--danger);border-radius:8px;padding:10px 14px;font-size:13px;
+  margin-bottom:1rem;display:none;
+}
+
+/* ── HEADER ─────────────────────────────────────── */
+.header{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:14px 20px;padding-top:max(14px, env(safe-area-inset-top));
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.header-left{display:flex;flex-direction:column}
+.header-name{font-family:var(--font-head);font-weight:700;font-size:17px}
+.header-role{font-size:12px;color:var(--muted)}
+.btn-logout{
+  background:transparent;border:1px solid var(--border);color:var(--muted);
+  padding:7px 14px;border-radius:8px;font-size:13px;cursor:pointer;
+  transition:border-color .2s;white-space:nowrap;
+}
+.btn-logout:hover{border-color:var(--danger);color:var(--danger)}
+
+/* ── EMPLEADO ───────────────────────────────────── */
+#screen-empleado{background:var(--bg)}
+.emp-body{flex:1;padding:1.25rem 1.25rem 2rem;overflow-y:auto}
+
+.status-banner{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:1rem 1.25rem;margin-bottom:1.5rem;
+  display:flex;align-items:center;gap:12px;
+}
+.status-dot{width:10px;height:10px;border-radius:50%;background:var(--muted);flex-shrink:0}
+.status-dot.in{background:var(--success)}
+.status-dot.lunch{background:var(--warn)}
+.status-text{font-size:14px;color:var(--muted)}
+.status-text strong{color:var(--text)}
+
+/* Botones de checada */
+.check-grid{display:grid;gap:1rem;margin-bottom:1.5rem}
+.check-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:1.25rem;cursor:pointer;transition:border-color .2s,background .2s;
+  display:flex;align-items:center;gap:14px;
+}
+.check-card:hover:not(.disabled){border-color:var(--accent);background:var(--surface2)}
+.check-card.disabled{opacity:.4;cursor:not-allowed}
+.check-icon{
+  width:48px;height:48px;border-radius:12px;display:flex;align-items:center;
+  justify-content:center;font-size:22px;flex-shrink:0;
+}
+.icon-entrada{background:rgba(34,211,160,.12);color:var(--success)}
+.icon-comida{background:rgba(245,158,11,.12);color:var(--warn)}
+.icon-salida{background:rgba(248,113,113,.12);color:var(--danger)}
+.check-info{flex:1}
+.check-title{font-weight:600;font-size:15px;margin-bottom:2px}
+.check-desc{font-size:12px;color:var(--muted)}
+.check-time{font-size:12px;color:var(--accent);font-weight:500;margin-top:4px}
+
+/* Historial del día */
+.section-title{font-family:var(--font-head);font-size:15px;font-weight:700;margin-bottom:.75rem;color:var(--muted)}
+.hist-list{display:flex;flex-direction:column;gap:.5rem}
+.hist-item{
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:.75rem 1rem;display:flex;align-items:center;gap:10px;font-size:13px;
+}
+.hist-badge{
+  padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;
+}
+.badge-entrada{background:rgba(34,211,160,.15);color:var(--success)}
+.badge-comida{background:rgba(245,158,11,.15);color:var(--warn)}
+.badge-salida{background:rgba(248,113,113,.15);color:var(--danger)}
+.hist-hora{color:var(--muted);margin-left:auto;font-variant-numeric:tabular-nums}
+.empty-state{text-align:center;color:var(--muted);font-size:14px;padding:2rem 0}
+
+/* ── MODAL CÁMARA ───────────────────────────────── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;
+  display:none;align-items:flex-end;justify-content:center;
+  padding:0;
+}
+.modal-overlay.open{display:flex}
+.modal{
+  background:var(--surface);border-radius:20px 20px 0 0;
+  width:100%;max-width:480px;padding:1.5rem 1.5rem 2rem;
+  animation:slideUp .3s ease;
+}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-title{font-family:var(--font-head);font-weight:700;font-size:18px;margin-bottom:.5rem}
+.modal-sub{font-size:13px;color:var(--muted);margin-bottom:1.25rem}
+
+/* Captura de foto */
+.cam-wrap{position:relative;border-radius:12px;overflow:hidden;background:#000;margin-bottom:1rem;aspect-ratio:4/3}
+#video{width:100%;height:100%;object-fit:cover;display:block}
+#canvas{display:none}
+#foto-preview{width:100%;height:100%;object-fit:cover;display:none}
+.cam-btn{
+  position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
+  width:60px;height:60px;border-radius:50%;border:4px solid #fff;
+  background:rgba(255,255,255,.2);cursor:pointer;backdrop-filter:blur(4px);
+  display:flex;align-items:center;justify-content:center;font-size:24px;
+  transition:transform .1s;
+}
+.cam-btn:active{transform:translateX(-50%) scale(.92)}
+.retake-btn{
+  position:absolute;top:10px;right:10px;background:rgba(0,0,0,.5);
+  border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:8px;
+  padding:6px 12px;font-size:12px;cursor:pointer;backdrop-filter:blur(4px);
+  display:none;
+}
+
+/* GPS */
+.gps-row{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-bottom:1rem}
+.gps-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0}
+.gps-dot.ok{background:var(--success)}
+.gps-dot.err{background:var(--danger)}
+
+/* modal botones */
+.modal-actions{display:flex;gap:.75rem}
+.btn-cancel{flex:1;background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+.btn-confirm{flex:2;background:var(--success);color:#0f172a}
+.btn-confirm:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── TOAST ──────────────────────────────────────── */
+.toast{
+  position:fixed;bottom:max(1.5rem, env(safe-area-inset-bottom));left:50%;
+  transform:translateX(-50%) translateY(120px);
+  background:var(--surface2);border:1px solid var(--border);color:var(--text);
+  padding:12px 20px;border-radius:30px;font-size:14px;font-weight:500;
+  z-index:200;transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+  white-space:nowrap;max-width:90vw;text-align:center;
+  box-shadow:0 8px 32px rgba(0,0,0,.4);
+}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.ok{border-color:var(--success);color:var(--success)}
+.toast.error{border-color:var(--danger);color:var(--danger)}
+
+/* ── ADMIN ──────────────────────────────────────── */
+#screen-admin{background:var(--bg)}
+.admin-body{flex:1;padding:1.25rem;overflow-y:auto}
+.admin-toolbar{display:flex;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap;align-items:center}
+.admin-toolbar input[type=date]{
+  background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+  color:var(--text);padding:8px 12px;font-size:13px;outline:none;
+}
+.admin-toolbar input[type=date]:focus{border-color:var(--accent)}
+.btn-excel{background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.3)}
+.btn-refresh{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:1.25rem}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;text-align:center}
+.stat-num{font-family:var(--font-head);font-size:28px;font-weight:700;color:var(--accent)}
+.stat-lbl{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* Tabla */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.table-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:600px}
+thead{background:var(--surface2)}
+th{text-align:left;padding:10px 14px;font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap}
+td{padding:10px 14px;font-size:13px;border-top:1px solid var(--border);vertical-align:middle}
+tr:hover td{background:rgba(255,255,255,.02)}
+.foto-link{color:var(--accent);font-size:12px;text-decoration:none}
+.foto-link:hover{text-decoration:underline}
+.loading{text-align:center;color:var(--muted);padding:2rem;font-size:14px}
+.coord{font-size:11px;color:var(--muted)}
+
+/* ── SPINNER ─────────────────────────────────────── */
+.spinner{
+  width:20px;height:20px;border:2px solid rgba(255,255,255,.2);
+  border-top-color:currentColor;border-radius:50%;
+  animation:spin .7s linear infinite;display:inline-block;vertical-align:middle;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── RESPONSIVE ─────────────────────────────────── */
+@media(min-width:600px){
+  .check-grid{grid-template-columns:1fr}
+  .modal{border-radius:20px;margin-bottom:2rem}
+  .modal-overlay{align-items:center}
+  .admin-body{max-width:900px;margin:0 auto;width:100%}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     PANTALLA: LOGIN
+════════════════════════════════════════════════ -->
+<section id="screen-login" class="screen active">
+  <div class="login-box">
+    <div class="login-logo">◉ Checador</div>
+    <p class="login-sub">Control de asistencia empresarial</p>
+    <div id="login-err" class="login-err"></div>
+    <div class="field">
+      <label for="inp-email">Correo electrónico</label>
+      <input id="inp-email" type="email" placeholder="tu@empresa.com" autocomplete="email">
+    </div>
+    <div class="field">
+      <label for="inp-pass">Contraseña</label>
+      <input id="inp-pass" type="password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn btn-primary" id="btn-login">Entrar</button>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     PANTALLA: EMPLEADO
+════════════════════════════════════════════════ -->
+<section id="screen-empleado" class="screen">
+  <div class="header">
+    <div class="header-left">
+      <span class="header-name" id="emp-nombre">—</span>
+      <span class="header-role" id="emp-fecha">—</span>
+    </div>
+    <button class="btn-logout" id="btn-logout-emp">Salir</button>
+  </div>
+
+  <div class="emp-body">
+    <!-- Estado actual -->
+    <div class="status-banner">
+      <span class="status-dot" id="status-dot"></span>
+      <span class="status-text" id="status-text">Sin registros hoy</span>
+    </div>
+
+    <!-- Botones de checada -->
+    <div class="check-grid">
+      <div class="check-card" id="card-entrada" onclick="abrirModal('Entrada')">
+        <div class="check-icon icon-entrada">↗</div>
+        <div class="check-info">
+          <div class="check-title">Entrada</div>
+          <div class="check-desc">Registrar inicio de jornada</div>
+          <div class="check-time" id="time-entrada"></div>
+        </div>
+      </div>
+      <div class="check-card disabled" id="card-comida" onclick="abrirModal('Comida')">
+        <div class="check-icon icon-comida">◉</div>
+        <div class="check-info">
+          <div class="check-title">Hora de comida</div>
+          <div class="check-desc">Registrar salida a comer</div>
+          <div class="check-time" id="time-comida"></div>
+        </div>
+      </div>
+      <div class="check-card disabled" id="card-salida" onclick="abrirModal('Salida')">
+        <div class="check-icon icon-salida">↙</div>
+        <div class="check-info">
+          <div class="check-title">Salida</div>
+          <div class="check-desc">Registrar fin de jornada</div>
+          <div class="check-time" id="time-salida"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Historial del día -->
+    <div class="section-title">Registros de hoy</div>
+    <div id="hist-list" class="hist-list">
+      <div class="empty-state">Aún no hay registros hoy</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     PANTALLA: ADMIN
+════════════════════════════════════════════════ -->
+<section id="screen-admin" class="screen">
+  <div class="header">
+    <div class="header-left">
+      <span class="header-name">Panel de administrador</span>
+      <span class="header-role" id="admin-nombre">—</span>
+    </div>
+    <button class="btn-logout" id="btn-logout-admin">Salir</button>
+  </div>
+
+  <div class="admin-body">
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-num" id="st-total">—</div><div class="stat-lbl">Registros</div></div>
+      <div class="stat-card"><div class="stat-num" id="st-hoy">—</div><div class="stat-lbl">Hoy</div></div>
+      <div class="stat-card"><div class="stat-num" id="st-emp">—</div><div class="stat-lbl">Empleados</div></div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="admin-toolbar">
+      <input type="date" id="fil-inicio" title="Desde">
+      <input type="date" id="fil-fin" title="Hasta">
+      <button class="btn btn-sm btn-refresh" id="btn-refresh">↻ Actualizar</button>
+      <button class="btn btn-sm btn-excel" id="btn-excel">⬇ Exportar Excel</button>
+    </div>
+
+    <!-- Tabla -->
+    <div class="table-wrap">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Tipo</th>
+              <th>Fecha</th>
+              <th>Hora</th>
+              <th>Ubicación</th>
+              <th>Foto</th>
+            </tr>
+          </thead>
+          <tbody id="admin-tbody">
+            <tr><td colspan="6" class="loading">Cargando registros…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     MODAL: CAPTURA
+════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Registrar entrada</div>
+    <div class="modal-sub">Toma una foto y espera tu ubicación</div>
+
+    <!-- Cámara -->
+    <div class="cam-wrap">
+      <video id="video" autoplay playsinline muted></video>
+      <canvas id="canvas"></canvas>
+      <img id="foto-preview" alt="Foto capturada">
+      <button class="cam-btn" id="btn-capturar" title="Tomar foto">📷</button>
+      <button class="retake-btn" id="btn-retomar">Retomar</button>
+    </div>
+
+    <!-- GPS -->
+    <div class="gps-row">
+      <span class="gps-dot" id="gps-dot"></span>
+      <span id="gps-text">Obteniendo ubicación…</span>
+    </div>
+
+    <!-- Acciones -->
+    <div class="modal-actions">
+      <button class="btn btn-cancel" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-confirm" id="btn-confirmar" disabled>Confirmar checada</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+// CONFIGURACIÓN — REEMPLAZA ESTA URL
+// ══════════════════════════════════════════════
+const API_URL = 'TU_APPS_SCRIPT_URL_AQUI';
+// Ejemplo: 'https://script.google.com/macros/s/XXXXXX/exec'
+
+// ══════════════════════════════════════════════
+// ESTADO GLOBAL
+// ══════════════════════════════════════════════
+let sesion = null;        // { email, nombre, rol }
+let tipoPendiente = null; // 'Entrada' | 'Comida' | 'Salida'
+let fotoB64 = null;
+let coords  = null;
+let stream  = null;
+let registrosHoy = [];
+
+// ══════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════
+function $(id){ return document.getElementById(id) }
+
+function mostrarPantalla(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $(id).classList.add('active');
+}
+
+function toast(msg, tipo='ok', ms=3000){
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + tipo + ' show';
+  setTimeout(() => t.classList.remove('show'), ms);
+}
+
+function fechaHoy(){
+  return new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+}
+function horaActual(){
+  return new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+}
+function hoyISO(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+async function api(body){
+  const r = await fetch(API_URL, { method:'POST', body: JSON.stringify(body) });
+  return r.json();
+}
+
+// ══════════════════════════════════════════════
+// LOGIN
+// ══════════════════════════════════════════════
+$('btn-login').addEventListener('click', async () => {
+  const email = $('inp-email').value.trim();
+  const pass  = $('inp-pass').value;
+  const err   = $('login-err');
+  err.style.display = 'none';
+
+  if (!email || !pass){ err.textContent='Ingresa correo y contraseña'; err.style.display='block'; return; }
+
+  $('btn-login').innerHTML = '<span class="spinner"></span>';
+  $('btn-login').disabled  = true;
+
+  try {
+    const res = await api({ action:'login', email, password:pass });
+    if (res.ok){
+      sesion = { email, nombre: res.nombre, rol: res.rol };
+      sessionStorage.setItem('sesion', JSON.stringify(sesion));
+      iniciarSesion();
+    } else {
+      err.textContent = res.error || 'Error al iniciar sesión';
+      err.style.display = 'block';
+    }
+  } catch {
+    err.textContent = 'No se pudo conectar. Revisa la URL del servidor.';
+    err.style.display = 'block';
+  }
+
+  $('btn-login').innerHTML = 'Entrar';
+  $('btn-login').disabled  = false;
+});
+
+$('inp-pass').addEventListener('keydown', e => { if(e.key==='Enter') $('btn-login').click(); });
+
+function iniciarSesion(){
+  if (sesion.rol === 'admin'){
+    $('admin-nombre').textContent = sesion.nombre;
+    mostrarPantalla('screen-admin');
+    cargarRegistros();
+    inicializarFiltros();
+  } else {
+    $('emp-nombre').textContent = sesion.nombre;
+    $('emp-fecha').textContent  = fechaHoy();
+    mostrarPantalla('screen-empleado');
+    cargarHistorialHoy();
+  }
+}
+
+function cerrarSesion(){
+  sesion = null; fotoB64 = null; coords = null; registrosHoy = [];
+  sessionStorage.removeItem('sesion');
+  cerrarModal();
+  mostrarPantalla('screen-login');
+}
+$('btn-logout-emp').addEventListener('click', cerrarSesion);
+$('btn-logout-admin').addEventListener('click', cerrarSesion);
+
+// ══════════════════════════════════════════════
+// HISTORIAL DEL DÍA (empleado)
+// ══════════════════════════════════════════════
+async function cargarHistorialHoy(){
+  try {
+    const res = await api({ action:'registros', email: sesion.email, rol:'admin', fecha_inicio: hoyISO(), fecha_fin: hoyISO() });
+    // Filtramos solo los del empleado actual
+    if (res.ok){
+      registrosHoy = res.registros.filter(r => r.email === sesion.email &&
+        (r.fecha === hoyISO().split('-').reverse().join('/') || r.fecha === hoyISO()));
+      actualizarUIEmpleado();
+    }
+  } catch { /* sin conexión, continuar */ }
+}
+
+function actualizarUIEmpleado(){
+  const tipos = registrosHoy.map(r => r.tipo);
+  const tiene = t => tipos.includes(t);
+
+  // Estado
+  const dot = $('status-dot');
+  const txt = $('status-text');
+  if (tiene('Salida')){
+    dot.className='status-dot'; txt.innerHTML='Jornada <strong>completada</strong> hoy';
+  } else if (tiene('Comida')){
+    dot.className='status-dot lunch'; txt.innerHTML='En <strong>hora de comida</strong>';
+  } else if (tiene('Entrada')){
+    dot.className='status-dot in'; txt.innerHTML='Jornada <strong>en curso</strong>';
+  } else {
+    dot.className='status-dot'; txt.innerHTML='Sin registros hoy';
+  }
+
+  // Habilitar/deshabilitar cards
+  const setCard = (id, enabled, timeId, tipo) => {
+    const card = $(id);
+    const reg  = registrosHoy.find(r => r.tipo === tipo);
+    if (enabled){ card.classList.remove('disabled'); }
+    else        { card.classList.add('disabled'); }
+    if (reg){ $(timeId).textContent = 'Registrado: ' + (reg.hora || ''); }
+  };
+
+  setCard('card-entrada', !tiene('Entrada'), 'time-entrada', 'Entrada');
+  setCard('card-comida',  tiene('Entrada') && !tiene('Comida') && !tiene('Salida'), 'time-comida', 'Comida');
+  setCard('card-salida',  tiene('Entrada') && !tiene('Salida'), 'time-salida', 'Salida');
+
+  // Historial
+  const lista = $('hist-list');
+  if (!registrosHoy.length){
+    lista.innerHTML = '<div class="empty-state">Aún no hay registros hoy</div>';
+    return;
+  }
+  const badges = { Entrada:'badge-entrada', Comida:'badge-comida', Salida:'badge-salida' };
+  lista.innerHTML = registrosHoy.map(r => `
+    <div class="hist-item">
+      <span class="hist-badge ${badges[r.tipo]||''}">${r.tipo}</span>
+      <span style="color:var(--muted);font-size:12px">${r.latitud ? '📍' : ''}</span>
+      <span class="hist-hora">${r.hora||''}</span>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════════════
+// MODAL DE CHECADA
+// ══════════════════════════════════════════════
+async function abrirModal(tipo){
+  const card = { Entrada:'card-entrada', Comida:'card-comida', Salida:'card-salida' }[tipo];
+  if ($(card).classList.contains('disabled')) return;
+
+  tipoPendiente = tipo;
+  fotoB64 = null; coords = null;
+  $('modal-title').textContent = 'Registrar ' + tipo.toLowerCase();
+  $('modal').classList.add('open');
+  $('btn-confirmar').disabled = true;
+  $('gps-dot').className = 'gps-dot';
+  $('gps-text').textContent = 'Obteniendo ubicación…';
+  $('foto-preview').style.display = 'none';
+  $('video').style.display = 'block';
+  $('btn-capturar').style.display = 'flex';
+  $('btn-retomar').style.display = 'none';
+
+  iniciarCamara();
+  obtenerUbicacion();
+}
+
+function cerrarModal(){
+  $('modal').classList.remove('open');
+  detenerCamara();
+  tipoPendiente = null; fotoB64 = null; coords = null;
+}
+
+// ── Cámara ───────────────────────────────────
+async function iniciarCamara(){
+  try {
+    detenerCamara();
+    // capture:user = selfie (frontal), use 'environment' para trasera
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width:{ideal:1280}, height:{ideal:720} },
+      audio: false
+    });
+    $('video').srcObject = stream;
+  } catch(e){
+    toast('No se pudo acceder a la cámara: ' + e.message, 'error');
+  }
+}
+
+function detenerCamara(){
+  if (stream){ stream.getTracks().forEach(t => t.stop()); stream = null; }
+}
+
+$('btn-capturar').addEventListener('click', () => {
+  const video   = $('video');
+  const canvas  = $('canvas');
+  const preview = $('foto-preview');
+  canvas.width  = video.videoWidth  || 640;
+  canvas.height = video.videoHeight || 480;
+  const ctx = canvas.getContext('2d');
+  // Espejo para selfie
+  ctx.save();
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, -canvas.width, 0);
+  ctx.restore();
+  fotoB64 = canvas.toDataURL('image/jpeg', 0.8);
+  preview.src = fotoB64;
+  preview.style.display = 'block';
+  video.style.display   = 'none';
+  $('btn-capturar').style.display = 'none';
+  $('btn-retomar').style.display  = 'block';
+  detenerCamara();
+  verificarListo();
+});
+
+$('btn-retomar').addEventListener('click', () => {
+  fotoB64 = null;
+  $('foto-preview').style.display = 'none';
+  $('video').style.display        = 'block';
+  $('btn-capturar').style.display = 'flex';
+  $('btn-retomar').style.display  = 'none';
+  iniciarCamara();
+  verificarListo();
+});
+
+// ── GPS ──────────────────────────────────────
+function obtenerUbicacion(){
+  if (!navigator.geolocation){
+    $('gps-dot').className = 'gps-dot err';
+    $('gps-text').textContent = 'GPS no disponible';
+    coords = { lat:0, lng:0 };
+    verificarListo();
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      coords = { lat: pos.coords.latitude.toFixed(6), lng: pos.coords.longitude.toFixed(6) };
+      $('gps-dot').className = 'gps-dot ok';
+      $('gps-text').textContent = `Ubicación obtenida (±${Math.round(pos.coords.accuracy)} m)`;
+      verificarListo();
+    },
+    err => {
+      $('gps-dot').className = 'gps-dot err';
+      $('gps-text').textContent = 'No se pudo obtener ubicación';
+      coords = { lat:0, lng:0 };
+      verificarListo();
+    },
+    { enableHighAccuracy:true, timeout:10000 }
+  );
+}
+
+function verificarListo(){
+  $('btn-confirmar').disabled = !(fotoB64 && coords);
+}
+
+// ── Confirmar checada ─────────────────────────
+$('btn-confirmar').addEventListener('click', async () => {
+  $('btn-confirmar').innerHTML = '<span class="spinner"></span>';
+  $('btn-confirmar').disabled  = true;
+
+  try {
+    const res = await api({
+      action: 'checar',
+      email:  sesion.email,
+      nombre: sesion.nombre,
+      tipo:   tipoPendiente,
+      lat:    coords.lat,
+      lng:    coords.lng,
+      foto:   fotoB64
+    });
+
+    if (res.ok){
+      toast(res.mensaje || 'Checada registrada', 'ok');
+      cerrarModal();
+      await cargarHistorialHoy();
+    } else {
+      toast(res.error || 'Error al registrar', 'error');
+    }
+  } catch {
+    toast('Sin conexión. Intenta de nuevo.', 'error');
+  }
+
+  $('btn-confirmar').innerHTML = 'Confirmar checada';
+  $('btn-confirmar').disabled  = false;
+});
+
+// ══════════════════════════════════════════════
+// ADMIN — REGISTROS
+// ══════════════════════════════════════════════
+function inicializarFiltros(){
+  const hoy = hoyISO();
+  const hace7 = new Date(Date.now() - 7*86400000).toISOString().split('T')[0];
+  $('fil-inicio').value = hace7;
+  $('fil-fin').value    = hoy;
+}
+
+async function cargarRegistros(){
+  const tbody = $('admin-tbody');
+  tbody.innerHTML = '<tr><td colspan="6" class="loading"><span class="spinner"></span> Cargando…</td></tr>';
+
+  try {
+    const res = await api({ action:'registros', rol:'admin' });
+    if (!res.ok){ tbody.innerHTML = '<tr><td colspan="6" class="loading">Error al cargar</td></tr>'; return; }
+
+    let regs = res.registros || [];
+
+    // Filtrar por fecha si hay filtros
+    const ini = $('fil-inicio').value;
+    const fin = $('fil-fin').value;
+    if (ini || fin){
+      regs = regs.filter(r => {
+        // fecha en formato dd/MM/yyyy
+        const partes = (r.fecha||'').split('/');
+        const fISO = partes.length===3 ? `${partes[2]}-${partes[1]}-${partes[0]}` : r.fecha;
+        return (!ini || fISO >= ini) && (!fin || fISO <= fin);
+      });
+    }
+
+    // Stats
+    const hoy = new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,'/');
+    const empleados = new Set(regs.map(r => r.email)).size;
+    const hoyCount  = regs.filter(r => {
+      const partes = (r.fecha||'').split('/');
+      const fISO   = partes.length===3 ? `${partes[2]}-${partes[1]}-${partes[0]}` : '';
+      return fISO === hoyISO();
+    }).length;
+
+    $('st-total').textContent = regs.length;
+    $('st-hoy').textContent   = hoyCount;
+    $('st-emp').textContent   = empleados;
+
+    if (!regs.length){
+      tbody.innerHTML = '<tr><td colspan="6" class="loading">Sin registros en el período</td></tr>';
+      return;
+    }
+
+    const badgeClass = { Entrada:'badge-entrada', Comida:'badge-comida', Salida:'badge-salida' };
+    tbody.innerHTML = regs.slice().reverse().map(r => `
+      <tr>
+        <td><strong>${r.nombre||r.email}</strong><br><span style="font-size:11px;color:var(--muted)">${r.email}</span></td>
+        <td><span class="hist-badge ${badgeClass[r.tipo]||''}">${r.tipo||'—'}</span></td>
+        <td>${r.fecha||'—'}</td>
+        <td>${r.hora||'—'}</td>
+        <td>${r.latitud ? `<a href="https://maps.google.com/?q=${r.latitud},${r.longitud}" target="_blank" class="foto-link">Ver mapa</a><br><span class="coord">${r.latitud}, ${r.longitud}</span>` : '—'}</td>
+        <td>${r.foto_url ? `<a href="${r.foto_url}" target="_blank" class="foto-link">Ver foto</a>` : '—'}</td>
+      </tr>
+    `).join('');
+  } catch {
+    tbody.innerHTML = '<tr><td colspan="6" class="loading">Sin conexión</td></tr>';
+  }
+}
+
+$('btn-refresh').addEventListener('click', cargarRegistros);
+$('btn-excel').addEventListener('click', async () => {
+  const res = await api({ action:'export', rol:'admin' });
+  if (res.ok) window.open(res.url, '_blank');
+});
+
+// ══════════════════════════════════════════════
+// PERSISTIR SESIÓN
+// ══════════════════════════════════════════════
+(function(){
+  const saved = sessionStorage.getItem('sesion');
+  if (saved){ sesion = JSON.parse(saved); iniciarSesion(); }
+})();
+
+// ══════════════════════════════════════════════
+// SERVICE WORKER (PWA)
+// ══════════════════════════════════════════════
+if ('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "Checador de Asistencia",
+  "short_name": "Checador",
+  "description": "Control de asistencia empresarial con foto y GPS",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='40' fill='%230f172a'/><circle cx='96' cy='96' r='52' fill='none' stroke='%2338bdf8' stroke-width='10'/><circle cx='96' cy='96' r='20' fill='%2338bdf8'/></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}
