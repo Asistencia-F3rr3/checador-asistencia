@@ -1064,4 +1064,1070 @@ if ('serviceWorker' in navigator){
 }
 </script>
 </body>
+</html>DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#dde3ea">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Checador">
+<link rel="manifest" href="manifest.json">
+<title>Checador de Asistencia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* ── PALETA EQUILIBRADA (TONOS MEDIOS MINIMALISTAS) ─ */
+:root{
+  --bg:           #dde3ea;
+  --surface:      #f1f5f9;
+  --surface2:     #e6ecf2;
+  --border:       #cbd5e1;
+  --primary:      #1e3a5f;
+  --primary-hover:#152a45;
+  --accent:       #2563eb;
+  --success:      #059669;
+  --success-bg:   #d1fae5;
+  --warn:         #d97706;
+  --warn-bg:      #fef3c7;
+  --danger:       #dc2626;
+  --danger-bg:    #fee2e2;
+  --text:         #1e293b;
+  --muted:        #64748b;
+  --radius:       16px;
+  --shadow-sm:    0 2px 8px rgba(15, 23, 42, 0.05);
+  --shadow-md:    0 12px 28px -6px rgba(15, 23, 42, 0.12);
+  --font-head:    'Plus Jakarta Sans', sans-serif;
+  --font-body:    'Inter', sans-serif;
+  color-scheme:   light;
+}
+
+/* ── RESET ──────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  height:100%;background:var(--bg);color:var(--text);
+  font-family:var(--font-body);font-size:15px;line-height:1.5;
+  overflow-x:hidden;-webkit-font-smoothing:antialiased;
+}
+input,button,select{font-family:inherit;font-size:inherit}
+img{max-width:100%;border-radius:10px}
+
+/* ── LAYOUT ─────────────────────────────────────── */
+.screen{display:none;min-height:100dvh;flex-direction:column}
+.screen.active{display:flex;animation:fadeIn .25s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── LOGIN ──────────────────────────────────────── */
+#screen-login{
+  align-items:center;justify-content:center;padding:1.5rem;
+  background:linear-gradient(145deg, #d5dde6 0%, #e4e9ef 100%);
+}
+.login-box{
+  width:100%;max-width:420px;
+  background:var(--surface);
+  border:1px solid rgba(255,255,255,0.75);
+  border-radius:24px;padding:2.25rem 2.25rem 2.4rem;
+  box-shadow:var(--shadow-md);
+}
+.login-top{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  margin-bottom:1.25rem;
+}
+.brand-icon{
+  width:34px;height:34px;border-radius:9px;background:var(--primary);
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  font-size:15px;font-weight:700;
+}
+.login-logo{
+  font-family:var(--font-head);font-size:20px;font-weight:700;
+  color:var(--text);letter-spacing:-0.4px;
+}
+
+/* Bloque de bienvenida y reloj centrado en Login */
+.login-welcome{
+  text-align:center;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:1.25rem 1rem;
+  margin-bottom:1.75rem;
+}
+.welcome-greeting{
+  font-family:var(--font-head);
+  font-size:20px;
+  font-weight:700;
+  color:var(--text);
+  margin-bottom:2px;
+}
+.welcome-date{
+  font-size:12px;
+  color:var(--muted);
+  text-transform:capitalize;
+  margin-bottom:.75rem;
+}
+.login-clock{
+  font-family:var(--font-head);
+  font-size:40px;
+  font-weight:700;
+  letter-spacing:-1.2px;
+  font-variant-numeric:tabular-nums;
+  color:var(--primary);
+  line-height:1.05;
+}
+
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:1.1rem}
+.field label{font-size:12px;color:var(--text);font-weight:600;letter-spacing:.2px}
+.field input{
+  background:var(--surface2);border:1px solid var(--border);border-radius:11px;
+  color:var(--text);padding:12px 14px;outline:none;transition:all .2s;
+}
+.field input::placeholder{color:#94a3b8}
+.field input:focus{
+  background:#fff;border-color:var(--primary);
+  box-shadow:0 0 0 3px rgba(30, 58, 95, 0.12);
+}
+.btn{
+  width:100%;padding:13px 16px;border:none;border-radius:11px;font-weight:600;
+  font-size:14px;cursor:pointer;transition:all .2s;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn:active{transform:scale(.98)}
+.btn-primary{
+  background:var(--primary);color:#fff;margin-top:.5rem;
+  box-shadow:0 4px 14px rgba(30, 58, 95, 0.22);
+}
+.btn-primary:hover{background:var(--primary-hover);transform:translateY(-1px)}
+.btn-sm{width:auto;padding:8px 14px;font-size:13px;border-radius:9px}
+.login-err{
+  background:var(--danger-bg);border:1px solid #fecaca;
+  color:var(--danger);border-radius:10px;padding:10px 14px;font-size:13px;
+  font-weight:500;margin-bottom:1.15rem;display:none;
+}
+
+/* ── HEADER ─────────────────────────────────────── */
+.header{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:14px 24px;padding-top:max(14px, env(safe-area-inset-top));
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  position:sticky;top:0;z-index:20;
+}
+.header-left{display:flex;align-items:center;gap:12px}
+.avatar{
+  width:38px;height:38px;border-radius:10px;background:var(--primary);
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-head);font-weight:700;font-size:15px;
+}
+.header-info{display:flex;flex-direction:column}
+.header-name{font-family:var(--font-head);font-weight:700;font-size:16px;color:var(--text);line-height:1.2}
+.header-role{font-size:12px;color:var(--muted);text-transform:capitalize}
+.btn-logout{
+  background:transparent;border:1px solid var(--border);
+  color:var(--muted);padding:7px 14px;border-radius:9px;font-size:13px;font-weight:500;
+  cursor:pointer;transition:all .2s;white-space:nowrap;
+}
+.btn-logout:hover{border-color:var(--danger);color:var(--danger);background:var(--danger-bg)}
+
+/* ── EMPLEADO ───────────────────────────────────── */
+.emp-body{flex:1;padding:1.5rem 1.25rem 2.5rem;overflow-y:auto;max-width:520px;margin:0 auto;width:100%}
+
+/* Reloj y Estado */
+.hero-clock{
+  background:var(--surface);border:1px solid rgba(255,255,255,0.8);border-radius:20px;
+  padding:1.5rem;margin-bottom:1.25rem;text-align:center;box-shadow:var(--shadow-sm);
+}
+.clock-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:.25rem}
+.clock-time{
+  font-family:var(--font-head);font-size:38px;font-weight:700;letter-spacing:-1px;
+  font-variant-numeric:tabular-nums;color:var(--primary);line-height:1.1;
+}
+.status-pill{
+  display:inline-flex;align-items:center;gap:8px;margin-top:.85rem;
+  background:var(--surface2);border:1px solid var(--border);
+  padding:5px 14px;border-radius:99px;font-size:12px;color:var(--muted);font-weight:500;
+}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0}
+.status-dot.in{background:var(--success)}
+.status-dot.lunch{background:var(--warn)}
+.status-text strong{color:var(--text);font-weight:600}
+
+/* Botones de checada */
+.check-grid{display:grid;gap:.8rem;margin-bottom:1.75rem}
+.check-card{
+  background:var(--surface);border:1px solid rgba(255,255,255,0.8);border-radius:var(--radius);
+  padding:1.1rem 1.25rem;cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;gap:14px;box-shadow:var(--shadow-sm);
+}
+.check-card:hover:not(.disabled){
+  border-color:var(--primary);transform:translateY(-2px);box-shadow:var(--shadow-md);
+}
+.check-card:active:not(.disabled){transform:scale(.99)}
+.check-card.disabled{
+  opacity:.48;cursor:not-allowed;background:var(--surface2);box-shadow:none;
+  pointer-events:none;
+}
+.check-icon{
+  width:46px;height:46px;border-radius:12px;display:flex;align-items:center;
+  justify-content:center;font-size:20px;flex-shrink:0;font-weight:700;
+}
+.icon-entrada{background:var(--success-bg);color:var(--success)}
+.icon-comida{background:var(--warn-bg);color:var(--warn)}
+.icon-salida{background:var(--danger-bg);color:var(--danger)}
+.check-info{flex:1}
+.check-title{font-weight:600;font-size:15px;margin-bottom:2px;color:var(--text)}
+.check-desc{font-size:12px;color:var(--muted)}
+.check-time{font-size:12px;color:var(--primary);font-weight:600;margin-top:3px}
+.check-arrow{color:var(--muted);font-size:18px;transition:transform .2s}
+.check-card:hover:not(.disabled) .check-arrow{transform:translateX(3px);color:var(--primary)}
+
+/* Historial del día */
+.section-title{
+  font-family:var(--font-head);font-size:12px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.8px;margin-bottom:.75rem;color:var(--muted);
+}
+.hist-list{display:flex;flex-direction:column;gap:.55rem}
+.hist-item{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:.8rem 1.1rem;display:flex;align-items:center;gap:10px;font-size:13px;
+}
+.hist-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600;
+}
+.hist-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+.badge-entrada{background:var(--success-bg);color:var(--success)}
+.badge-comida{background:var(--warn-bg);color:var(--warn)}
+.badge-salida{background:var(--danger-bg);color:var(--danger)}
+.hist-hora{color:var(--text);font-weight:600;margin-left:auto;font-variant-numeric:tabular-nums}
+.empty-state{
+  text-align:center;color:var(--muted);font-size:13px;padding:1.75rem 1rem;
+  background:var(--surface2);border:1px dashed var(--border);border-radius:14px;
+}
+
+/* ── MODAL CÁMARA ───────────────────────────────── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(15, 23, 42, 0.65);backdrop-filter:blur(5px);
+  z-index:100;display:none;align-items:flex-end;justify-content:center;padding:0;
+}
+.modal-overlay.open{display:flex}
+.modal{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:24px 24px 0 0;width:100%;max-width:450px;
+  padding:1.5rem 1.5rem 2rem;box-shadow:var(--shadow-md);
+  animation:slideUp .28s cubic-bezier(.16,1,.3,1);
+}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-title{font-family:var(--font-head);font-weight:700;font-size:19px;color:var(--text);margin-bottom:.2rem}
+.modal-sub{font-size:13px;color:var(--muted);margin-bottom:1.15rem}
+
+/* Captura de foto */
+.cam-wrap{
+  position:relative;border-radius:16px;overflow:hidden;background:#0f172a;
+  margin-bottom:1rem;aspect-ratio:4/3;border:1px solid var(--border);
+}
+#video{width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1)}
+#canvas{display:none}
+#foto-preview{width:100%;height:100%;object-fit:cover;display:none}
+.face-guide{
+  position:absolute;inset:14% 26%;border:2px dashed rgba(255,255,255,.55);
+  border-radius:50%;pointer-events:none;
+}
+.cam-btn{
+  position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
+  width:60px;height:60px;border-radius:50%;border:4px solid #fff;
+  background:rgba(255,255,255,.28);cursor:pointer;backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;font-size:22px;
+  transition:transform .12s;box-shadow:0 4px 16px rgba(0,0,0,.35);
+}
+.cam-btn:active{transform:translateX(-50%) scale(.9)}
+.retake-btn{
+  position:absolute;top:12px;right:12px;background:rgba(15,23,42,.75);
+  border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:9px;
+  padding:6px 12px;font-size:12px;font-weight:500;cursor:pointer;backdrop-filter:blur(6px);
+  display:none;
+}
+
+/* GPS */
+.gps-row{
+  display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text);
+  background:var(--surface2);border:1px solid var(--border);
+  padding:10px 14px;border-radius:11px;margin-bottom:1.15rem;
+}
+.gps-dot{width:9px;height:9px;border-radius:50%;background:var(--warn);flex-shrink:0}
+.gps-dot.ok{background:var(--success)}
+.gps-dot.err{background:var(--danger)}
+
+/* modal botones */
+.modal-actions{display:flex;gap:.75rem}
+.btn-cancel{flex:1;background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.btn-cancel:hover{background:#dce3eb}
+.btn-confirm{flex:2;background:var(--success);color:#fff;font-weight:600}
+.btn-confirm:hover:not(:disabled){background:#047857}
+.btn-confirm:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── TOAST ──────────────────────────────────────── */
+.toast{
+  position:fixed;bottom:max(1.5rem, env(safe-area-inset-bottom));left:50%;
+  transform:translateX(-50%) translateY(120px);
+  background:var(--text);color:#fff;
+  padding:12px 22px;border-radius:99px;font-size:13px;font-weight:500;
+  z-index:200;transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+  white-space:nowrap;max-width:90vw;text-align:center;
+  box-shadow:var(--shadow-md);
+}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.ok{background:var(--success)}
+.toast.error{background:var(--danger)}
+
+/* ── ADMIN ──────────────────────────────────────── */
+.admin-body{flex:1;padding:1.5rem 1.25rem 3rem;overflow-y:auto}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.85rem;margin-bottom:1.25rem}
+.stat-card{
+  background:var(--surface);border:1px solid rgba(255,255,255,0.8);border-radius:var(--radius);
+  padding:1.15rem 1rem;text-align:center;box-shadow:var(--shadow-sm);
+}
+.stat-num{font-family:var(--font-head);font-size:28px;font-weight:700;color:var(--primary)}
+.stat-lbl{font-size:12px;color:var(--muted);margin-top:2px;font-weight:500}
+
+.admin-toolbar{
+  display:flex;gap:.65rem;margin-bottom:1.25rem;flex-wrap:wrap;align-items:center;
+  background:var(--surface);border:1px solid var(--border);padding:.85rem;border-radius:14px;
+  box-shadow:var(--shadow-sm);
+}
+.admin-toolbar input[type=date]{
+  background:var(--surface2);border:1px solid var(--border);border-radius:9px;
+  color:var(--text);padding:8px 12px;font-size:13px;outline:none;
+}
+.admin-toolbar input[type=date]:focus{border-color:var(--primary);background:#fff}
+.btn-excel{background:var(--success-bg);color:var(--success);border:1px solid #a7f3d0}
+.btn-excel:hover{background:var(--success);color:#fff}
+.btn-refresh{background:var(--surface2);color:var(--text);border:1px solid var(--border);margin-left:auto}
+.btn-refresh:hover{border-color:var(--primary);background:#fff}
+
+/* Tabla */
+.table-wrap{
+  background:var(--surface);border:1px solid rgba(255,255,255,0.8);
+  border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-sm);
+}
+.table-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:640px}
+thead{background:var(--surface2);border-bottom:1px solid var(--border)}
+th{
+  text-align:left;padding:12px 16px;font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.6px;color:var(--muted);white-space:nowrap;
+}
+td{padding:12px 16px;font-size:13px;border-top:1px solid var(--border);vertical-align:middle}
+tr:hover td{background:rgba(30, 58, 95, 0.03)}
+.foto-link{
+  display:inline-flex;align-items:center;gap:4px;
+  color:var(--primary);font-size:12px;font-weight:600;text-decoration:none;
+  background:var(--surface2);border:1px solid var(--border);padding:4px 10px;border-radius:7px;
+  transition:all .15s;
+}
+.foto-link:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
+.loading{text-align:center;color:var(--muted);padding:2.5rem;font-size:14px}
+.coord{font-size:11px;color:var(--muted);display:block;margin-top:3px}
+
+/* ── SPINNER ─────────────────────────────────────── */
+.spinner{
+  width:18px;height:18px;border:2px solid rgba(255,255,255,.35);
+  border-top-color:currentColor;border-radius:50%;
+  animation:spin .7s linear infinite;display:inline-block;vertical-align:middle;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── RESPONSIVE ─────────────────────────────────── */
+@media(min-width:600px){
+  .modal{border-radius:22px;margin-bottom:2rem}
+  .modal-overlay{align-items:center}
+  .admin-body{max-width:960px;margin:0 auto;width:100%}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     PANTALLA: LOGIN
+════════════════════════════════════════════════ -->
+<section id="screen-login" class="screen active">
+  <div class="login-box">
+    <div class="login-top">
+      <div class="brand-icon">◉</div>
+      <div class="login-logo">Checador</div>
+    </div>
+
+    <!-- Saludo dinámico y reloj grande centrado -->
+    <div class="login-welcome">
+      <div class="welcome-greeting" id="login-saludo">Bienvenido</div>
+      <div class="welcome-date" id="login-fecha">—</div>
+      <div class="login-clock" id="login-reloj">00:00:00</div>
+    </div>
+
+    <div id="login-err" class="login-err"></div>
+    <div class="field">
+      <label for="inp-email">Correo electrónico</label>
+      <input id="inp-email" type="email" placeholder="nombre@empresa.com" autocomplete="email">
+    </div>
+    <div class="field">
+      <label for="inp-pass">Contraseña</label>
+      <input id="inp-pass" type="password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn btn-primary" id="btn-login">Iniciar sesión</button>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     PANTALLA: EMPLEADO
+════════════════════════════════════════════════ -->
+<section id="screen-empleado" class="screen">
+  <div class="header">
+    <div class="header-left">
+      <div class="avatar" id="emp-avatar">E</div>
+      <div class="header-info">
+        <span class="header-name" id="emp-nombre">—</span>
+        <span class="header-role" id="emp-fecha">—</span>
+      </div>
+    </div>
+    <button class="btn-logout" id="btn-logout-emp">Salir</button>
+  </div>
+
+  <div class="emp-body">
+    <!-- Reloj y Estado actual -->
+    <div class="hero-clock">
+      <div class="clock-label">Hora local</div>
+      <div class="clock-time" id="reloj-vivo">00:00:00</div>
+      <div class="status-pill">
+        <span class="status-dot" id="status-dot"></span>
+        <span class="status-text" id="status-text">Sin registros hoy</span>
+      </div>
+    </div>
+
+    <!-- Botones de checada -->
+    <div class="check-grid">
+      <div class="check-card" id="card-entrada" onclick="abrirModal('Entrada')">
+        <div class="check-icon icon-entrada">↗</div>
+        <div class="check-info">
+          <div class="check-title">Entrada</div>
+          <div class="check-desc">Registrar inicio de jornada</div>
+          <div class="check-time" id="time-entrada"></div>
+        </div>
+        <span class="check-arrow">›</span>
+      </div>
+      <div class="check-card disabled" id="card-comida" onclick="abrirModal('Comida')">
+        <div class="check-icon icon-comida">◉</div>
+        <div class="check-info">
+          <div class="check-title" id="title-comida">Hora de comida</div>
+          <div class="check-desc" id="desc-comida">Registrar salida a comer</div>
+          <div class="check-time" id="time-comida"></div>
+        </div>
+        <span class="check-arrow">›</span>
+      </div>
+      <div class="check-card disabled" id="card-salida" onclick="abrirModal('Salida')">
+        <div class="check-icon icon-salida">↙</div>
+        <div class="check-info">
+          <div class="check-title">Salida</div>
+          <div class="check-desc">Registrar fin de jornada</div>
+          <div class="check-time" id="time-salida"></div>
+        </div>
+        <span class="check-arrow">›</span>
+      </div>
+    </div>
+
+    <!-- Historial del día -->
+    <div class="section-title">Registros de hoy</div>
+    <div id="hist-list" class="hist-list">
+      <div class="empty-state">Aún no hay registros hoy</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     PANTALLA: ADMIN
+════════════════════════════════════════════════ -->
+<section id="screen-admin" class="screen">
+  <div class="header">
+    <div class="header-left">
+      <div class="avatar">A</div>
+      <div class="header-info">
+        <span class="header-name">Panel de administrador</span>
+        <span class="header-role" id="admin-nombre">—</span>
+      </div>
+    </div>
+    <button class="btn-logout" id="btn-logout-admin">Salir</button>
+  </div>
+
+  <div class="admin-body">
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-num" id="st-total">—</div><div class="stat-lbl">Registros</div></div>
+      <div class="stat-card"><div class="stat-num" id="st-hoy">—</div><div class="stat-lbl">Hoy</div></div>
+      <div class="stat-card"><div class="stat-num" id="st-emp">—</div><div class="stat-lbl">Empleados</div></div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="admin-toolbar">
+      <input type="date" id="fil-inicio" title="Desde">
+      <input type="date" id="fil-fin" title="Hasta">
+      <button class="btn btn-sm btn-refresh" id="btn-refresh">↻ Actualizar</button>
+      <button class="btn btn-sm btn-excel" id="btn-excel">⬇ Exportar Excel</button>
+    </div>
+
+    <!-- Tabla -->
+    <div class="table-wrap">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Empleado</th>
+              <th>Tipo</th>
+              <th>Fecha</th>
+              <th>Hora</th>
+              <th>Ubicación</th>
+              <th>Evidencia</th>
+            </tr>
+          </thead>
+          <tbody id="admin-tbody">
+            <tr><td colspan="6" class="loading">Cargando registros…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     MODAL: CAPTURA
+════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Registrar entrada</div>
+    <div class="modal-sub">Encuadra tu rostro y espera la señal GPS</div>
+
+    <!-- Cámara -->
+    <div class="cam-wrap">
+      <video id="video" autoplay playsinline muted></video>
+      <div class="face-guide" id="face-guide"></div>
+      <canvas id="canvas"></canvas>
+      <img id="foto-preview" alt="Foto capturada">
+      <button class="cam-btn" id="btn-capturar" title="Tomar foto">📷</button>
+      <button class="retake-btn" id="btn-retomar">↺ Retomar</button>
+    </div>
+
+    <!-- GPS -->
+    <div class="gps-row">
+      <span class="gps-dot" id="gps-dot"></span>
+      <span id="gps-text">Obteniendo ubicación…</span>
+    </div>
+
+    <!-- Acciones -->
+    <div class="modal-actions">
+      <button class="btn btn-cancel" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-confirm" id="btn-confirmar" disabled>Confirmar checada</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+// CONFIGURACIÓN — URL DE GOOGLE APPS SCRIPT
+// ══════════════════════════════════════════════
+const API_URL = 'https://script.google.com/macros/s/AKfycbzt44QkdF7DUZkCV2NmvguyqzRb_MEuI-ps_i82UMigjkH36WgdT9sBommYmMZhCNZS/exec';
+
+// ══════════════════════════════════════════════
+// ESTADO GLOBAL
+// ══════════════════════════════════════════════
+let sesion = null;
+let tipoPendiente = null;
+let fotoB64 = null;
+let coords  = null;
+let stream  = null;
+let registrosHoy = [];
+
+// ══════════════════════════════════════════════
+// HELPERS, SALUDO DINÁMICO Y RELOJ EN VIVO
+// ══════════════════════════════════════════════
+function $(id){ return document.getElementById(id) }
+
+function fechaHoy(){
+  return new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+}
+
+function actualizarRelojYSaludo(){
+  const ahora = new Date();
+  const h = ahora.getHours();
+  const horaStr = ahora.toLocaleTimeString('es-MX', {
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+  });
+
+  const elEmp = $('reloj-vivo');
+  if (elEmp) elEmp.textContent = horaStr;
+
+  const elLoginReloj = $('login-reloj');
+  if (elLoginReloj) elLoginReloj.textContent = horaStr;
+
+  const elSaludo = $('login-saludo');
+  if (elSaludo){
+    if (h >= 5 && h < 12)       elSaludo.textContent = 'Buenos días';
+    else if (h >= 12 && h < 19) elSaludo.textContent = 'Buenas tardes';
+    else                        elSaludo.textContent = 'Buenas noches';
+  }
+
+  const elLoginFecha = $('login-fecha');
+  if (elLoginFecha) elLoginFecha.textContent = fechaHoy();
+}
+setInterval(actualizarRelojYSaludo, 1000);
+actualizarRelojYSaludo();
+
+function mostrarPantalla(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $(id).classList.add('active');
+}
+
+function toast(msg, tipo='ok', ms=3000){
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + tipo + ' show';
+  setTimeout(() => t.classList.remove('show'), ms);
+}
+
+function hoyISO(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+// Adjunta automáticamente el token de sesión en cada petición
+async function api(body){
+  const payload = { ...body };
+  if (sesion && sesion.token && !payload.token){
+    payload.token = sesion.token;
+  }
+  const r = await fetch(API_URL, { method:'POST', body: JSON.stringify(payload) });
+  const data = await r.json();
+
+  // Si el token expiró (14h), regresar al login limpiamente
+  if (!data.ok && data.error && data.error.includes('Sesión inválida') && sesion){
+    toast('Tu sesión expiró. Inicia sesión de nuevo.', 'error');
+    cerrarSesion();
+  }
+  return data;
+}
+
+// ══════════════════════════════════════════════
+// LOGIN
+// ══════════════════════════════════════════════
+$('btn-login').addEventListener('click', async () => {
+  const email = $('inp-email').value.trim();
+  const pass  = $('inp-pass').value;
+  const err   = $('login-err');
+  err.style.display = 'none';
+
+  if (!email || !pass){ err.textContent='Ingresa correo y contraseña'; err.style.display='block'; return; }
+
+  $('btn-login').innerHTML = '<span class="spinner"></span>';
+  $('btn-login').disabled  = true;
+
+  try {
+    const res = await api({ action:'login', email, password:pass });
+    if (res.ok){
+      sesion = {
+        email:  res.email || email,
+        nombre: res.nombre,
+        rol:    res.rol,
+        token:  res.token
+      };
+      localStorage.setItem('sesion', JSON.stringify(sesion));
+      iniciarSesion();
+    } else {
+      err.textContent = res.error || 'Error al iniciar sesión';
+      err.style.display = 'block';
+    }
+  } catch {
+    err.textContent = 'No se pudo conectar. Revisa la URL del servidor.';
+    err.style.display = 'block';
+  }
+
+  $('btn-login').innerHTML = 'Iniciar sesión';
+  $('btn-login').disabled  = false;
+});
+
+$('inp-pass').addEventListener('keydown', e => { if(e.key==='Enter') $('btn-login').click(); });
+
+function iniciarSesion(){
+  const inicial = (sesion.nombre || sesion.email || 'U').charAt(0).toUpperCase();
+  if (sesion.rol === 'admin'){
+    $('admin-nombre').textContent = sesion.nombre;
+    mostrarPantalla('screen-admin');
+    inicializarFiltros();
+    cargarRegistros();
+  } else {
+    $('emp-avatar').textContent = inicial;
+    $('emp-nombre').textContent = sesion.nombre;
+    $('emp-fecha').textContent  = fechaHoy();
+    mostrarPantalla('screen-empleado');
+    cargarHistorialHoy();
+  }
+}
+
+function cerrarSesion(){
+  sesion = null; fotoB64 = null; coords = null; registrosHoy = [];
+  localStorage.removeItem('sesion');
+  cerrarModal();
+  mostrarPantalla('screen-login');
+}
+$('btn-logout-emp').addEventListener('click', cerrarSesion);
+$('btn-logout-admin').addEventListener('click', cerrarSesion);
+
+// ══════════════════════════════════════════════
+// HISTORIAL DEL DÍA (empleado)
+// ══════════════════════════════════════════════
+async function cargarHistorialHoy(){
+  try {
+    const res = await api({ action:'registros', fecha_inicio: hoyISO(), fecha_fin: hoyISO() });
+    if (res.ok){
+      const emailActual = String(sesion.email || '').trim().toLowerCase();
+      const hoyDDMMYYYY = hoyISO().split('-').reverse().join('/');
+      
+      registrosHoy = (res.registros || []).filter(r => {
+        const fLimpia = String(r.fecha || '').replace("'", '').trim();
+        return String(r.email || '').trim().toLowerCase() === emailActual &&
+               (fLimpia === hoyDDMMYYYY || fLimpia === hoyISO());
+      }).reverse(); // Orden cronológico del día (Entrada -> Comida -> Salida)
+      actualizarUIEmpleado();
+    }
+  } catch { /* sin conexión, continuar */ }
+}
+
+function actualizarUIEmpleado(){
+  const tipos = registrosHoy.map(r => String(r.tipo || '').trim());
+  const tiene = t => tipos.includes(t);
+
+  const enComida = tiene('Inicio Comida') && !tiene('Fin Comida');
+  const comidaTerminada = tiene('Fin Comida') || tiene('Comida');
+
+  // Estado superior
+  const dot = $('status-dot');
+  const txt = $('status-text');
+  if (tiene('Salida')){
+    dot.className='status-dot'; txt.innerHTML='Jornada <strong>completada</strong> hoy';
+  } else if (enComida){
+    dot.className='status-dot lunch'; txt.innerHTML='En <strong>hora de comida</strong>';
+  } else if (tiene('Entrada')){
+    dot.className='status-dot in'; txt.innerHTML='Jornada <strong>en curso</strong>';
+  } else {
+    dot.className='status-dot'; txt.innerHTML='Sin registros hoy';
+  }
+
+  // Habilitar / deshabilitar tarjetas estrictamente
+  const setCard = (id, enabled) => {
+    const card = $(id);
+    if (enabled){
+      card.classList.remove('disabled');
+      card.style.pointerEvents = 'auto';
+    } else {
+      card.classList.add('disabled');
+      card.style.pointerEvents = 'none';
+    }
+  };
+
+  // 1. Entrada
+  const regEntrada = registrosHoy.find(r => r.tipo === 'Entrada');
+  setCard('card-entrada', !tiene('Entrada'));
+  $('time-entrada').textContent = regEntrada ? ('Registrado a las ' + (regEntrada.hora || '').replace("'", '')) : '';
+
+  // 2. Comida (soporta Inicio Comida y Fin Comida del backend)
+  const regIniComida = registrosHoy.find(r => r.tipo === 'Inicio Comida');
+  const regFinComida = registrosHoy.find(r => r.tipo === 'Fin Comida' || r.tipo === 'Comida');
+  const puedeComida  = tiene('Entrada') && !comidaTerminada && !tiene('Salida');
+  setCard('card-comida', puedeComida);
+
+  if (enComida){
+    $('title-comida').textContent = 'Regresar de comida';
+    $('desc-comida').textContent  = 'Registrar fin de hora de comida';
+    $('time-comida').textContent  = 'Inicio: ' + (regIniComida.hora || '').replace("'", '');
+  } else if (regFinComida){
+    $('title-comida').textContent = 'Hora de comida';
+    $('desc-comida').textContent  = 'Comida completada';
+    $('time-comida').textContent  = regIniComida
+      ? `De ${(regIniComida.hora||'').replace("'",'')} a ${(regFinComida.hora||'').replace("'",'')}`
+      : `Registrado a las ${(regFinComida.hora||'').replace("'",'')}`;
+  } else {
+    $('title-comida').textContent = 'Hora de comida';
+    $('desc-comida').textContent  = 'Registrar salida a comer';
+    $('time-comida').textContent  = '';
+  }
+
+  // 3. Salida (bloqueada si está en medio de comida sin terminar)
+  const regSalida = registrosHoy.find(r => r.tipo === 'Salida');
+  setCard('card-salida', tiene('Entrada') && !enComida && !tiene('Salida'));
+  $('time-salida').textContent = regSalida ? ('Registrado a las ' + (regSalida.hora || '').replace("'", '')) : '';
+
+  // Historial del día
+  const lista = $('hist-list');
+  if (!registrosHoy.length){
+    lista.innerHTML = '<div class="empty-state">Aún no hay registros hoy</div>';
+    return;
+  }
+  const badges = {
+    'Entrada':       'badge-entrada',
+    'Comida':        'badge-comida',
+    'Inicio Comida': 'badge-comida',
+    'Fin Comida':    'badge-comida',
+    'Salida':        'badge-salida'
+  };
+  lista.innerHTML = registrosHoy.map(r => `
+    <div class="hist-item">
+      <span class="hist-badge ${badges[r.tipo]||''}">${r.tipo}</span>
+      <span style="color:var(--muted);font-size:12px">${r.latitud ? '📍 Ubicación verificada' : ''}</span>
+      <span class="hist-hora">${(r.hora||'').replace("'", '')}</span>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════════════
+// MODAL DE CHECADA
+// ══════════════════════════════════════════════
+async function abrirModal(tipo){
+  const card = { Entrada:'card-entrada', Comida:'card-comida', Salida:'card-salida' }[tipo];
+  if ($(card).classList.contains('disabled')) return;
+
+  tipoPendiente = tipo;
+  fotoB64 = null; coords = null;
+
+  let tituloModal = 'Registrar ' + tipo.toLowerCase();
+  if (tipo === 'Comida'){
+    const yaInicio = registrosHoy.some(r => r.tipo === 'Inicio Comida');
+    tituloModal = yaInicio ? 'Registrar fin de comida' : 'Registrar inicio de comida';
+  }
+  $('modal-title').textContent = tituloModal;
+
+  $('modal').classList.add('open');
+  $('btn-confirmar').disabled = true;
+  $('gps-dot').className = 'gps-dot';
+  $('gps-text').textContent = 'Obteniendo ubicación…';
+  $('foto-preview').style.display = 'none';
+  $('video').style.display = 'block';
+  $('face-guide').style.display = 'block';
+  $('btn-capturar').style.display = 'flex';
+  $('btn-retomar').style.display = 'none';
+
+  iniciarCamara();
+  obtenerUbicacion();
+}
+
+function cerrarModal(){
+  $('modal').classList.remove('open');
+  detenerCamara();
+  tipoPendiente = null; fotoB64 = null; coords = null;
+}
+
+// ── Cámara ───────────────────────────────────
+async function iniciarCamara(){
+  try {
+    detenerCamara();
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width:{ideal:1280}, height:{ideal:720} },
+      audio: false
+    });
+    $('video').srcObject = stream;
+  } catch(e){
+    toast('No se pudo acceder a la cámara: ' + e.message, 'error');
+  }
+}
+
+function detenerCamara(){
+  if (stream){ stream.getTracks().forEach(t => t.stop()); stream = null; }
+}
+
+$('btn-capturar').addEventListener('click', () => {
+  const video   = $('video');
+  const canvas  = $('canvas');
+  const preview = $('foto-preview');
+  canvas.width  = video.videoWidth  || 640;
+  canvas.height = video.videoHeight || 480;
+  const ctx = canvas.getContext('2d');
+  ctx.save();
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, -canvas.width, 0);
+  ctx.restore();
+  fotoB64 = canvas.toDataURL('image/jpeg', 0.8);
+  preview.src = fotoB64;
+  preview.style.display = 'block';
+  video.style.display   = 'none';
+  $('face-guide').style.display   = 'none';
+  $('btn-capturar').style.display = 'none';
+  $('btn-retomar').style.display  = 'block';
+  detenerCamara();
+  verificarListo();
+});
+
+$('btn-retomar').addEventListener('click', () => {
+  fotoB64 = null;
+  $('foto-preview').style.display = 'none';
+  $('video').style.display        = 'block';
+  $('face-guide').style.display   = 'block';
+  $('btn-capturar').style.display = 'flex';
+  $('btn-retomar').style.display  = 'none';
+  iniciarCamara();
+  verificarListo();
+});
+
+// ── GPS ──────────────────────────────────────
+function obtenerUbicacion(){
+  if (!navigator.geolocation){
+    $('gps-dot').className = 'gps-dot err';
+    $('gps-text').textContent = 'GPS no disponible';
+    coords = { lat:0, lng:0 };
+    verificarListo();
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      coords = { lat: pos.coords.latitude.toFixed(6), lng: pos.coords.longitude.toFixed(6) };
+      $('gps-dot').className = 'gps-dot ok';
+      $('gps-text').textContent = `Ubicación lista (±${Math.round(pos.coords.accuracy)} m)`;
+      verificarListo();
+    },
+    err => {
+      $('gps-dot').className = 'gps-dot err';
+      $('gps-text').textContent = 'No se pudo obtener ubicación';
+      coords = { lat:0, lng:0 };
+      verificarListo();
+    },
+    { enableHighAccuracy:true, timeout:10000 }
+  );
+}
+
+function verificarListo(){
+  $('btn-confirmar').disabled = !(fotoB64 && coords);
+}
+
+// ── Confirmar checada ─────────────────────────
+$('btn-confirmar').addEventListener('click', async () => {
+  $('btn-confirmar').innerHTML = '<span class="spinner"></span>';
+  $('btn-confirmar').disabled  = true;
+
+  try {
+    const res = await api({
+      action: 'checar',
+      tipo:   tipoPendiente,
+      lat:    coords.lat,
+      lng:    coords.lng,
+      foto:   fotoB64
+    });
+
+    if (res.ok){
+      toast(res.mensaje || 'Checada registrada', 'ok');
+      cerrarModal();
+      await cargarHistorialHoy();
+    } else {
+      toast(res.error || 'Error al registrar', 'error');
+    }
+  } catch {
+    toast('Sin conexión. Intenta de nuevo.', 'error');
+  }
+
+  $('btn-confirmar').innerHTML = 'Confirmar checada';
+  $('btn-confirmar').disabled  = false;
+});
+
+// ══════════════════════════════════════════════
+// ADMIN — REGISTROS
+// ══════════════════════════════════════════════
+function inicializarFiltros(){
+  const hoy = hoyISO();
+  const hace7 = new Date(Date.now() - 7*86400000).toISOString().split('T')[0];
+  $('fil-inicio').value = hace7;
+  $('fil-fin').value    = hoy;
+}
+
+async function cargarRegistros(){
+  const tbody = $('admin-tbody');
+  tbody.innerHTML = '<tr><td colspan="6" class="loading"><span class="spinner"></span> Cargando…</td></tr>';
+
+  try {
+    const ini = $('fil-inicio').value;
+    const fin = $('fil-fin').value;
+    const res = await api({ action:'registros', fecha_inicio: ini, fecha_fin: fin });
+    
+    if (!res.ok){
+      tbody.innerHTML = `<tr><td colspan="6" class="loading">${res.error || 'Error al cargar'}</td></tr>`;
+      return;
+    }
+
+    const regs = res.registros || [];
+
+    const empleados = new Set(regs.map(r => r.email)).size;
+    const hoyCount  = regs.filter(r => {
+      const fLimpia = String(r.fecha||'').replace("'", '').trim();
+      const partes  = fLimpia.split('/');
+      const fISO    = partes.length===3 ? `${partes[2]}-${partes[1]}-${partes[0]}` : fLimpia;
+      return fISO === hoyISO();
+    }).length;
+
+    $('st-total').textContent = regs.length;
+    $('st-hoy').textContent   = hoyCount;
+    $('st-emp').textContent   = empleados;
+
+    if (!regs.length){
+      tbody.innerHTML = '<tr><td colspan="6" class="loading">Sin registros en el período</td></tr>';
+      return;
+    }
+
+    const badgeClass = {
+      'Entrada':       'badge-entrada',
+      'Comida':        'badge-comida',
+      'Inicio Comida': 'badge-comida',
+      'Fin Comida':    'badge-comida',
+      'Salida':        'badge-salida'
+    };
+    tbody.innerHTML = regs.map(r => `
+      <tr>
+        <td><strong>${r.nombre||r.email}</strong><br><span style="font-size:11px;color:var(--muted)">${r.email}</span></td>
+        <td><span class="hist-badge ${badgeClass[r.tipo]||''}">${r.tipo||'—'}</span></td>
+        <td>${(r.fecha||'—').replace("'", '')}</td>
+        <td style="font-variant-numeric:tabular-nums;font-weight:500">${(r.hora||'—').replace("'", '')}</td>
+        <td>${r.latitud ? `<a href="https://maps.google.com/?q=${r.latitud},${r.longitud}" target="_blank" class="foto-link">📍 Mapa</a><span class="coord">${r.latitud}, ${r.longitud}</span>` : '—'}</td>
+        <td>${r.foto_url ? `<a href="${r.foto_url}" target="_blank" class="foto-link">📷 Ver foto</a>` : '—'}</td>
+      </tr>
+    `).join('');
+  } catch {
+    tbody.innerHTML = '<tr><td colspan="6" class="loading">Sin conexión</td></tr>';
+  }
+}
+
+$('btn-refresh').addEventListener('click', cargarRegistros);
+$('btn-excel').addEventListener('click', async () => {
+  const res = await api({ action:'export' });
+  if (res.ok) window.open(res.url, '_blank');
+});
+
+// ══════════════════════════════════════════════
+// PERSISTIR SESIÓN
+// ══════════════════════════════════════════════
+(function(){
+  const saved = localStorage.getItem('sesion');
+  if (saved){
+    sesion = JSON.parse(saved);
+    if (!sesion.token){
+      // Si había una sesión vieja guardada sin token, pedir login limpio
+      localStorage.removeItem('sesion');
+      sesion = null;
+    } else {
+      iniciarSesion();
+    }
+  }
+})();
+
+// ══════════════════════════════════════════════
+// SERVICE WORKER (PWA)
+// ══════════════════════════════════════════════
+if ('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
 </html>
