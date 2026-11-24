@@ -451,8 +451,8 @@ tr:hover td{background:rgba(30, 58, 95, 0.03)}
       <div class="check-card disabled" id="card-comida" onclick="abrirModal('Comida')">
         <div class="check-icon icon-comida">◉</div>
         <div class="check-info">
-          <div class="check-title">Hora de comida</div>
-          <div class="check-desc">Registrar salida a comer</div>
+          <div class="check-title" id="title-comida">Hora de comida</div>
+          <div class="check-desc" id="desc-comida">Registrar salida a comer</div>
           <div class="check-time" id="time-comida"></div>
         </div>
         <span class="check-arrow">›</span>
@@ -597,11 +597,9 @@ function actualizarRelojYSaludo(){
     hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
   });
 
-  // Reloj en pantalla de empleado
   const elEmp = $('reloj-vivo');
   if (elEmp) elEmp.textContent = horaStr;
 
-  // Reloj y saludo en pantalla de login
   const elLoginReloj = $('login-reloj');
   if (elLoginReloj) elLoginReloj.textContent = horaStr;
 
@@ -635,9 +633,21 @@ function hoyISO(){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 
+// Adjunta automáticamente el token de sesión en cada petición
 async function api(body){
-  const r = await fetch(API_URL, { method:'POST', body: JSON.stringify(body) });
-  return r.json();
+  const payload = { ...body };
+  if (sesion && sesion.token && !payload.token){
+    payload.token = sesion.token;
+  }
+  const r = await fetch(API_URL, { method:'POST', body: JSON.stringify(payload) });
+  const data = await r.json();
+
+  // Si el token expiró (14h), regresar al login limpiamente
+  if (!data.ok && data.error && data.error.includes('Sesión inválida') && sesion){
+    toast('Tu sesión expiró. Inicia sesión de nuevo.', 'error');
+    cerrarSesion();
+  }
+  return data;
 }
 
 // ══════════════════════════════════════════════
@@ -657,7 +667,12 @@ $('btn-login').addEventListener('click', async () => {
   try {
     const res = await api({ action:'login', email, password:pass });
     if (res.ok){
-      sesion = { email, nombre: res.nombre, rol: res.rol };
+      sesion = {
+        email:  res.email || email,
+        nombre: res.nombre,
+        rol:    res.rol,
+        token:  res.token
+      };
       localStorage.setItem('sesion', JSON.stringify(sesion));
       iniciarSesion();
     } else {
@@ -680,8 +695,8 @@ function iniciarSesion(){
   if (sesion.rol === 'admin'){
     $('admin-nombre').textContent = sesion.nombre;
     mostrarPantalla('screen-admin');
-    cargarRegistros();
     inicializarFiltros();
+    cargarRegistros();
   } else {
     $('emp-avatar').textContent = inicial;
     $('emp-nombre').textContent = sesion.nombre;
@@ -705,15 +720,16 @@ $('btn-logout-admin').addEventListener('click', cerrarSesion);
 // ══════════════════════════════════════════════
 async function cargarHistorialHoy(){
   try {
-    const res = await api({ action:'registros', email: sesion.email, rol:'admin', fecha_inicio: hoyISO(), fecha_fin: hoyISO() });
+    const res = await api({ action:'registros', fecha_inicio: hoyISO(), fecha_fin: hoyISO() });
     if (res.ok){
       const emailActual = String(sesion.email || '').trim().toLowerCase();
       const hoyDDMMYYYY = hoyISO().split('-').reverse().join('/');
       
-      registrosHoy = res.registros.filter(r =>
-        String(r.email || '').trim().toLowerCase() === emailActual &&
-        (String(r.fecha || '').trim() === hoyDDMMYYYY || String(r.fecha || '').trim() === hoyISO())
-      );
+      registrosHoy = (res.registros || []).filter(r => {
+        const fLimpia = String(r.fecha || '').replace("'", '').trim();
+        return String(r.email || '').trim().toLowerCase() === emailActual &&
+               (fLimpia === hoyDDMMYYYY || fLimpia === hoyISO());
+      }).reverse(); // Orden cronológico del día (Entrada -> Comida -> Salida)
       actualizarUIEmpleado();
     }
   } catch { /* sin conexión, continuar */ }
@@ -723,12 +739,15 @@ function actualizarUIEmpleado(){
   const tipos = registrosHoy.map(r => String(r.tipo || '').trim());
   const tiene = t => tipos.includes(t);
 
+  const enComida = tiene('Inicio Comida') && !tiene('Fin Comida');
+  const comidaTerminada = tiene('Fin Comida') || tiene('Comida');
+
   // Estado superior
   const dot = $('status-dot');
   const txt = $('status-text');
   if (tiene('Salida')){
     dot.className='status-dot'; txt.innerHTML='Jornada <strong>completada</strong> hoy';
-  } else if (tiene('Comida')){
+  } else if (enComida){
     dot.className='status-dot lunch'; txt.innerHTML='En <strong>hora de comida</strong>';
   } else if (tiene('Entrada')){
     dot.className='status-dot in'; txt.innerHTML='Jornada <strong>en curso</strong>';
@@ -737,9 +756,8 @@ function actualizarUIEmpleado(){
   }
 
   // Habilitar / deshabilitar tarjetas estrictamente
-  const setCard = (id, enabled, timeId, tipo) => {
+  const setCard = (id, enabled) => {
     const card = $(id);
-    const reg  = registrosHoy.find(r => String(r.tipo || '').trim() === tipo);
     if (enabled){
       card.classList.remove('disabled');
       card.style.pointerEvents = 'auto';
@@ -747,12 +765,39 @@ function actualizarUIEmpleado(){
       card.classList.add('disabled');
       card.style.pointerEvents = 'none';
     }
-    $(timeId).textContent = reg ? ('Registrado a las ' + (reg.hora || '')) : '';
   };
 
-  setCard('card-entrada', !tiene('Entrada'), 'time-entrada', 'Entrada');
-  setCard('card-comida',  tiene('Entrada') && !tiene('Comida') && !tiene('Salida'), 'time-comida', 'Comida');
-  setCard('card-salida',  tiene('Entrada') && !tiene('Salida'), 'time-salida', 'Salida');
+  // 1. Entrada
+  const regEntrada = registrosHoy.find(r => r.tipo === 'Entrada');
+  setCard('card-entrada', !tiene('Entrada'));
+  $('time-entrada').textContent = regEntrada ? ('Registrado a las ' + (regEntrada.hora || '').replace("'", '')) : '';
+
+  // 2. Comida (soporta Inicio Comida y Fin Comida del backend)
+  const regIniComida = registrosHoy.find(r => r.tipo === 'Inicio Comida');
+  const regFinComida = registrosHoy.find(r => r.tipo === 'Fin Comida' || r.tipo === 'Comida');
+  const puedeComida  = tiene('Entrada') && !comidaTerminada && !tiene('Salida');
+  setCard('card-comida', puedeComida);
+
+  if (enComida){
+    $('title-comida').textContent = 'Regresar de comida';
+    $('desc-comida').textContent  = 'Registrar fin de hora de comida';
+    $('time-comida').textContent  = 'Inicio: ' + (regIniComida.hora || '').replace("'", '');
+  } else if (regFinComida){
+    $('title-comida').textContent = 'Hora de comida';
+    $('desc-comida').textContent  = 'Comida completada';
+    $('time-comida').textContent  = regIniComida
+      ? `De ${(regIniComida.hora||'').replace("'",'')} a ${(regFinComida.hora||'').replace("'",'')}`
+      : `Registrado a las ${(regFinComida.hora||'').replace("'",'')}`;
+  } else {
+    $('title-comida').textContent = 'Hora de comida';
+    $('desc-comida').textContent  = 'Registrar salida a comer';
+    $('time-comida').textContent  = '';
+  }
+
+  // 3. Salida (bloqueada si está en medio de comida sin terminar)
+  const regSalida = registrosHoy.find(r => r.tipo === 'Salida');
+  setCard('card-salida', tiene('Entrada') && !enComida && !tiene('Salida'));
+  $('time-salida').textContent = regSalida ? ('Registrado a las ' + (regSalida.hora || '').replace("'", '')) : '';
 
   // Historial del día
   const lista = $('hist-list');
@@ -760,12 +805,18 @@ function actualizarUIEmpleado(){
     lista.innerHTML = '<div class="empty-state">Aún no hay registros hoy</div>';
     return;
   }
-  const badges = { Entrada:'badge-entrada', Comida:'badge-comida', Salida:'badge-salida' };
+  const badges = {
+    'Entrada':       'badge-entrada',
+    'Comida':        'badge-comida',
+    'Inicio Comida': 'badge-comida',
+    'Fin Comida':    'badge-comida',
+    'Salida':        'badge-salida'
+  };
   lista.innerHTML = registrosHoy.map(r => `
     <div class="hist-item">
       <span class="hist-badge ${badges[r.tipo]||''}">${r.tipo}</span>
       <span style="color:var(--muted);font-size:12px">${r.latitud ? '📍 Ubicación verificada' : ''}</span>
-      <span class="hist-hora">${r.hora||''}</span>
+      <span class="hist-hora">${(r.hora||'').replace("'", '')}</span>
     </div>
   `).join('');
 }
@@ -779,7 +830,14 @@ async function abrirModal(tipo){
 
   tipoPendiente = tipo;
   fotoB64 = null; coords = null;
-  $('modal-title').textContent = 'Registrar ' + tipo.toLowerCase();
+
+  let tituloModal = 'Registrar ' + tipo.toLowerCase();
+  if (tipo === 'Comida'){
+    const yaInicio = registrosHoy.some(r => r.tipo === 'Inicio Comida');
+    tituloModal = yaInicio ? 'Registrar fin de comida' : 'Registrar inicio de comida';
+  }
+  $('modal-title').textContent = tituloModal;
+
   $('modal').classList.add('open');
   $('btn-confirmar').disabled = true;
   $('gps-dot').className = 'gps-dot';
@@ -889,8 +947,6 @@ $('btn-confirmar').addEventListener('click', async () => {
   try {
     const res = await api({
       action: 'checar',
-      email:  sesion.email,
-      nombre: sesion.nombre,
       tipo:   tipoPendiente,
       lat:    coords.lat,
       lng:    coords.lng,
@@ -927,25 +983,22 @@ async function cargarRegistros(){
   tbody.innerHTML = '<tr><td colspan="6" class="loading"><span class="spinner"></span> Cargando…</td></tr>';
 
   try {
-    const res = await api({ action:'registros', rol:'admin' });
-    if (!res.ok){ tbody.innerHTML = '<tr><td colspan="6" class="loading">Error al cargar</td></tr>'; return; }
-
-    let regs = res.registros || [];
-
     const ini = $('fil-inicio').value;
     const fin = $('fil-fin').value;
-    if (ini || fin){
-      regs = regs.filter(r => {
-        const partes = (r.fecha||'').split('/');
-        const fISO = partes.length===3 ? `${partes[2]}-${partes[1]}-${partes[0]}` : r.fecha;
-        return (!ini || fISO >= ini) && (!fin || fISO <= fin);
-      });
+    const res = await api({ action:'registros', fecha_inicio: ini, fecha_fin: fin });
+    
+    if (!res.ok){
+      tbody.innerHTML = `<tr><td colspan="6" class="loading">${res.error || 'Error al cargar'}</td></tr>`;
+      return;
     }
+
+    const regs = res.registros || [];
 
     const empleados = new Set(regs.map(r => r.email)).size;
     const hoyCount  = regs.filter(r => {
-      const partes = (r.fecha||'').split('/');
-      const fISO   = partes.length===3 ? `${partes[2]}-${partes[1]}-${partes[0]}` : '';
+      const fLimpia = String(r.fecha||'').replace("'", '').trim();
+      const partes  = fLimpia.split('/');
+      const fISO    = partes.length===3 ? `${partes[2]}-${partes[1]}-${partes[0]}` : fLimpia;
       return fISO === hoyISO();
     }).length;
 
@@ -958,13 +1011,19 @@ async function cargarRegistros(){
       return;
     }
 
-    const badgeClass = { Entrada:'badge-entrada', Comida:'badge-comida', Salida:'badge-salida' };
-    tbody.innerHTML = regs.slice().reverse().map(r => `
+    const badgeClass = {
+      'Entrada':       'badge-entrada',
+      'Comida':        'badge-comida',
+      'Inicio Comida': 'badge-comida',
+      'Fin Comida':    'badge-comida',
+      'Salida':        'badge-salida'
+    };
+    tbody.innerHTML = regs.map(r => `
       <tr>
         <td><strong>${r.nombre||r.email}</strong><br><span style="font-size:11px;color:var(--muted)">${r.email}</span></td>
         <td><span class="hist-badge ${badgeClass[r.tipo]||''}">${r.tipo||'—'}</span></td>
-        <td>${r.fecha||'—'}</td>
-        <td style="font-variant-numeric:tabular-nums;font-weight:500">${r.hora||'—'}</td>
+        <td>${(r.fecha||'—').replace("'", '')}</td>
+        <td style="font-variant-numeric:tabular-nums;font-weight:500">${(r.hora||'—').replace("'", '')}</td>
         <td>${r.latitud ? `<a href="https://maps.google.com/?q=${r.latitud},${r.longitud}" target="_blank" class="foto-link">📍 Mapa</a><span class="coord">${r.latitud}, ${r.longitud}</span>` : '—'}</td>
         <td>${r.foto_url ? `<a href="${r.foto_url}" target="_blank" class="foto-link">📷 Ver foto</a>` : '—'}</td>
       </tr>
@@ -976,7 +1035,7 @@ async function cargarRegistros(){
 
 $('btn-refresh').addEventListener('click', cargarRegistros);
 $('btn-excel').addEventListener('click', async () => {
-  const res = await api({ action:'export', rol:'admin' });
+  const res = await api({ action:'export' });
   if (res.ok) window.open(res.url, '_blank');
 });
 
@@ -985,7 +1044,16 @@ $('btn-excel').addEventListener('click', async () => {
 // ══════════════════════════════════════════════
 (function(){
   const saved = localStorage.getItem('sesion');
-  if (saved){ sesion = JSON.parse(saved); iniciarSesion(); }
+  if (saved){
+    sesion = JSON.parse(saved);
+    if (!sesion.token){
+      // Si había una sesión vieja guardada sin token, pedir login limpio
+      localStorage.removeItem('sesion');
+      sesion = null;
+    } else {
+      iniciarSesion();
+    }
+  }
 })();
 
 // ══════════════════════════════════════════════
