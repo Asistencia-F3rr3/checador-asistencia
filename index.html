@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#e2e8f0">
+<meta name="theme-color" content="#dde3ea">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Checador">
@@ -15,21 +15,21 @@
 <style>
 /* ── PALETA EQUILIBRADA (TONOS MEDIOS MINIMALISTAS) ─ */
 :root{
-  --bg:           #dde3ea;   /* Gris azulado medio suave, cero fatiga visual */
-  --surface:      #f1f5f9;   /* Gris perla elevado para tarjetas */
-  --surface2:     #e6ecf2;   /* Tono secundario para inputs y hover */
-  --border:       #cbd5e1;   /* Líneas divisorias limpias */
-  --primary:      #1e3a5f;   /* Azul marino corporativo elegante */
+  --bg:           #dde3ea;
+  --surface:      #f1f5f9;
+  --surface2:     #e6ecf2;
+  --border:       #cbd5e1;
+  --primary:      #1e3a5f;
   --primary-hover:#152a45;
-  --accent:       #2563eb;   /* Azul acento profesional */
-  --success:      #059669;   /* Verde esmeralda sobrio */
+  --accent:       #2563eb;
+  --success:      #059669;
   --success-bg:   #d1fae5;
-  --warn:         #d97706;   /* Ámbar corporativo */
+  --warn:         #d97706;
   --warn-bg:      #fef3c7;
-  --danger:       #dc2626;   /* Rojo sobrio */
+  --danger:       #dc2626;
   --danger-bg:    #fee2e2;
-  --text:         #1e293b;   /* Gris carbón oscuro para lectura nítida */
-  --muted:        #64748b;   /* Gris medio para subtítulos */
+  --text:         #1e293b;
+  --muted:        #64748b;
   --radius:       16px;
   --shadow-sm:    0 2px 8px rgba(15, 23, 42, 0.05);
   --shadow-md:    0 12px 28px -6px rgba(15, 23, 42, 0.12);
@@ -162,7 +162,10 @@ img{max-width:100%;border-radius:10px}
   border-color:var(--primary);transform:translateY(-2px);box-shadow:var(--shadow-md);
 }
 .check-card:active:not(.disabled){transform:scale(.99)}
-.check-card.disabled{opacity:.48;cursor:not-allowed;background:var(--surface2);box-shadow:none}
+.check-card.disabled{
+  opacity:.48;cursor:not-allowed;background:var(--surface2);box-shadow:none;
+  pointer-events:none;
+}
 .check-icon{
   width:46px;height:46px;border-radius:12px;display:flex;align-items:center;
   justify-content:center;font-size:20px;flex-shrink:0;font-weight:700;
@@ -644,18 +647,23 @@ async function cargarHistorialHoy(){
   try {
     const res = await api({ action:'registros', email: sesion.email, rol:'admin', fecha_inicio: hoyISO(), fecha_fin: hoyISO() });
     if (res.ok){
-      registrosHoy = res.registros.filter(r => r.email === sesion.email &&
-        (r.fecha === hoyISO().split('-').reverse().join('/') || r.fecha === hoyISO()));
+      const emailActual = String(sesion.email || '').trim().toLowerCase();
+      const hoyDDMMYYYY = hoyISO().split('-').reverse().join('/');
+      
+      registrosHoy = res.registros.filter(r =>
+        String(r.email || '').trim().toLowerCase() === emailActual &&
+        (String(r.fecha || '').trim() === hoyDDMMYYYY || String(r.fecha || '').trim() === hoyISO())
+      );
       actualizarUIEmpleado();
     }
   } catch { /* sin conexión, continuar */ }
 }
 
 function actualizarUIEmpleado(){
-  const tipos = registrosHoy.map(r => r.tipo);
+  const tipos = registrosHoy.map(r => String(r.tipo || '').trim());
   const tiene = t => tipos.includes(t);
 
-  // Estado
+  // Estado superior
   const dot = $('status-dot');
   const txt = $('status-text');
   if (tiene('Salida')){
@@ -668,20 +676,25 @@ function actualizarUIEmpleado(){
     dot.className='status-dot'; txt.innerHTML='Sin registros hoy';
   }
 
-  // Habilitar/deshabilitar cards
+  // Habilitar / deshabilitar tarjetas estrictamente
   const setCard = (id, enabled, timeId, tipo) => {
     const card = $(id);
-    const reg  = registrosHoy.find(r => r.tipo === tipo);
-    if (enabled){ card.classList.remove('disabled'); }
-    else        { card.classList.add('disabled'); }
-    if (reg){ $(timeId).textContent = 'Registrado a las ' + (reg.hora || ''); }
+    const reg  = registrosHoy.find(r => String(r.tipo || '').trim() === tipo);
+    if (enabled){
+      card.classList.remove('disabled');
+      card.style.pointerEvents = 'auto';
+    } else {
+      card.classList.add('disabled');
+      card.style.pointerEvents = 'none';
+    }
+    $(timeId).textContent = reg ? ('Registrado a las ' + (reg.hora || '')) : '';
   };
 
   setCard('card-entrada', !tiene('Entrada'), 'time-entrada', 'Entrada');
   setCard('card-comida',  tiene('Entrada') && !tiene('Comida') && !tiene('Salida'), 'time-comida', 'Comida');
   setCard('card-salida',  tiene('Entrada') && !tiene('Salida'), 'time-salida', 'Salida');
 
-  // Historial
+  // Historial del día
   const lista = $('hist-list');
   if (!registrosHoy.length){
     lista.innerHTML = '<div class="empty-state">Aún no hay registros hoy</div>';
